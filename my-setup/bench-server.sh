@@ -9,9 +9,10 @@
 # Env overrides:
 #   SERVER=path/to/llama-server.exe   another build (default: this repo's build\bin)
 #   PROMPT="..."                      generation prompt (default: a coding task)
+#   MAX_TOKENS=N                      tokens to generate (default: 600)
 # Server logs go to my-setup/bench-logs/<label>.log (git-ignored).
 set -u
-[ $# -ge 1 ] || { sed -n '2,12p' "$0"; exit 1; }
+[ $# -ge 1 ] || { sed -n '2,13p' "$0"; exit 1; }
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(dirname "$HERE")"
 LABEL=$1; shift
@@ -40,8 +41,14 @@ PP=$(curl -s http://127.0.0.1:8099/completion -d @"$BODY" \
 rm -f "$BODY"
 
 # Generation: code task by default (realistic for MTP acceptance), 600 tokens
-GEN=$(curl -s http://127.0.0.1:8099/v1/chat/completions -d '{"messages":[{"role":"user","content":"'"${PROMPT:-Write a complete Python implementation of an LRU cache class with get/put, type hints, docstrings and unit tests.}"'"}],"max_tokens":600,"temperature":0.6,"chat_template_kwargs":{"enable_thinking":false}}' \
+# (body built with json.dumps so PROMPT may contain quotes/newlines, e.g. PROMPT="$(cat file)")
+export PROMPT="${PROMPT:-Write a complete Python implementation of an LRU cache class with get/put, type hints, docstrings and unit tests.}"
+BODY=$(mktemp)
+python -c "import json,os;print(json.dumps({'messages':[{'role':'user','content':os.environ['PROMPT']}],'max_tokens':int(os.environ.get('MAX_TOKENS','600')),'temperature':0.6,'chat_template_kwargs':{'enable_thinking':False}}))" >"$BODY"
+GEN=$(curl -s http://127.0.0.1:8099/v1/chat/completions -d @"$BODY" \
   | python -c "import sys,json;d=json.load(sys.stdin);t=d['timings'];a=t.get('draft_n_accepted');n=t.get('draft_n');acc=f', draft accept {a}/{n}' if n else '';print(f\"tg {t['predicted_n']} tok @ {t['predicted_per_second']:.1f} t/s{acc}\")")
+
+rm -f "$BODY"
 
 echo "[$LABEL] VRAM $VRAM | $PP | $GEN"
 kill $PID 2>/dev/null; wait $PID 2>/dev/null
