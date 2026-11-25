@@ -10,6 +10,7 @@ Personal build + server config for this fork. Not part of upstream llama.cpp.
 | `Start-LocalAI.ps1` | Starts the `llama-server` router on `http://127.0.0.1:8080` using `build\bin` and `model.ini`. |
 | `model.ini` | `llama-server --models-preset` file: Qwen3.8-27B IQ3_XXS with MTP speculative decoding. Benchmarks are in the header comments. |
 | `bench-server.sh` | Git Bash benchmark: starts a server on `:8099` with given flags, prints VRAM, prompt and generation t/s plus MTP draft acceptance. `SERVER=` picks another build, `PROMPT=` another prompt. Logs go to `bench-logs/` (git-ignored). |
+| `bench-agent.py` | Simulates an OpenHands tool-calling loop against a running server and prints per-turn prompt-cache reuse and timings. `--thinking`, `--interleave` (unrelated requests in between), `--url`, `--turns`. |
 
 These are the live files. `D:\AI-Dev\Scripts\Build-LlamaCpp.ps1`,
 `D:\AI-Dev\Scripts\Start-LocalAI.ps1` and `D:\AI-Dev\Tools\llama.cpp\scripts\bench-server.sh`
